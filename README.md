@@ -37,6 +37,44 @@ ORDER BY
     age ASC
 ```
 
+Before and after running you could run the next query:
+
+```sql
+SELECT
+    database,
+    table,
+    count() AS parts,
+    active,
+    partition,
+    min(min_date) AS min_date,
+    max(max_date) AS max_date,
+    formatReadableSize(sum(bytes_on_disk)) AS size,
+    sum(rows) AS rows
+FROM system.parts
+INNER JOIN
+(
+    SELECT
+        Tables.database AS database,
+        Tables.table AS table
+    FROM system.graphite_retentions
+    ARRAY JOIN Tables
+    GROUP BY
+        database,
+        table
+) USING (database, table)
+GROUP BY
+    database,
+    table,
+    partition,
+    active
+ORDER BY
+    database,
+    table,
+    partition,
+    active ASC
+```
+
+It will show general info about every GraphiteMergeTree table on the server.
 
 ## Run the graphite-ch-optimizer
 If you run the ClickHouse locally, you could just run `graphite-ch-optimizer -n --log-level debug` and see how many partitions on the instance are able to be merged automatically.
