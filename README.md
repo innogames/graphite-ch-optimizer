@@ -1,6 +1,15 @@
 # Service to optimize stale GraphiteMergeTree tables
 This software looking for tables with GraphiteMergeTree engine and evaluate if some of partitions should be optimized. It could work both as one-shot script and background daemon.
 
+## FAQ
+* The `go` version 1.13 or newer is required
+* Deamon mode is preferable over one-shot script for the normal work
+* It's safe to run it on the cluster hosts
+* You could either run it on the one of replicated host or just over the all hosts
+* If you have big partitions (month or something like this) and will get exceptions about timeout, then you need to adjust `read_timeout` parameter in DSN
+* `optimize_throw_if_noop=1` is not mandatory, but good to have.
+
+### Details
 The next query is executed as search for the partitions to optimize:
 
 ```sql
@@ -96,7 +105,7 @@ Default config:
   output = "-"
 ```
 
-Possible command arguments:
+Possible command line arguments:
 
 ```
 Usage of graphite-ch-optimizer:
