@@ -92,12 +92,12 @@ Default config:
 
 ```toml
 [clickhouse]
-  optimize-interval = 259200
+  optimize-interval = "72h0m0s"
   server-dsn = "tcp://localhost:9000?&optimize_throw_if_noop=1&read_timeout=3600&debug=true"
 
 [daemon]
   dry-run = false
-  loop-interval = 3600
+  loop-interval = "1h0m0s"
   one-shot = false
 
 [logging]
@@ -109,13 +109,13 @@ Possible command line arguments:
 
 ```
 Usage of graphite-ch-optimizer:
-  -c, --config string            Filename of the custom config. CLI arguments override it
-      --print-defaults           Print default config values and exit
-      --optimize-interval uint   The active partitions won't be optimized more than once per this interval, seconds (default 259200)
-  -s, --server-dsn string        DSN to connect to ClickHouse server (default "tcp://localhost:9000?&optimize_throw_if_noop=1&read_timeout=3600&debug=true")
-  -n, --dry-run                  Will print how many partitions would be merged without actions
-      --loop-interval uint       Daemon will check if there partitions to merge once per this interval, seconds (default 3600)
-      --one-shot                 Program will make only one optimization instead of working in the loop (true if dry-run)
-      --log-level string         Valid options are: panic, fatal, error, warn, warning, info, debug, trace
-      --output string            The logs file. '-' is accepted as STDOUT (default "-")
+  -c, --config string                Filename of the custom config. CLI arguments override it
+      --print-defaults               Print default config values and exit
+      --optimize-interval duration   The active partitions won't be optimized more than once per this interval, seconds (default 72h0m0s)
+  -s, --server-dsn string            DSN to connect to ClickHouse server (default "tcp://localhost:9000?&optimize_throw_if_noop=1&read_timeout=3600&debug=true")
+  -n, --dry-run                      Will print how many partitions would be merged without actions
+      --loop-interval duration       Daemon will check if there partitions to merge once per this interval, seconds (default 1h0m0s)
+      --one-shot                     Program will make only one optimization instead of working in the loop (true if dry-run)
+      --log-level string             Valid options are: panic, fatal, error, warn, warning, info, debug, trace
+      --output string                The logs file. '-' is accepted as STDOUT (default "-")
 ```
