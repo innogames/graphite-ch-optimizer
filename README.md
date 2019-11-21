@@ -1,16 +1,19 @@
 # Service to optimize stale GraphiteMergeTree tables
+When you use [GraphiteMergeTree](https://clickhouse.yandex/docs/en/operations/table_engines/graphitemergetree) in ClickHouse DBMS, it applies retention policies from `system.graphite_retentions` configuration during merge processes. Unfortunately, ClickHouse doesn't launch merges for partitions a) without active inserts or b) with only one part in. It means, that it never will watch for the actual retention scheme applied to partitions.  
 This software looking for tables with GraphiteMergeTree engine and evaluate if some of partitions should be optimized. It could work both as one-shot script and background daemon.
 
 ## FAQ
 * The `go` version 1.13 or newer is required
-* Deamon mode is preferable over one-shot script for the normal work
+* Daemon mode is preferable over one-shot script for the normal work
 * It's safe to run it on the cluster hosts
 * You could either run it on the one of replicated host or just over the all hosts
 * If you have big partitions (month or something like this) and will get exceptions about timeout, then you need to adjust `read_timeout` parameter in DSN
 * `optimize_throw_if_noop=1` is not mandatory, but good to have.
+* The next picture demonstrates the result of running the daemon for the first time on ~3 years old GraphiteMergeTree table:  
+<img src="./docs/result.jpg" alt="example"/>
 
 ### Details
-The next query is executed as search for the partitions to optimize:
+The next query is executed with some additional conditions as search for the partitions to optimize:
 
 ```sql
 SELECT
@@ -46,7 +49,9 @@ ORDER BY
     age ASC
 ```
 
-Before and after running you could run the next query:
+#### The next queries could be executed before and after the daemon running
+
+* Detailed info about each partition of GraphiteMergeTree tables:
 
 ```sql
 SELECT
@@ -83,7 +88,41 @@ ORDER BY
     active ASC
 ```
 
-It will show general info about every GraphiteMergeTree table on the server.
+* Summary about each GraphiteMergeTree table:
+
+```sql
+SELECT
+    database,
+    table,
+    count() AS parts,
+    active,
+    min(min_date) AS min_date,
+    max(max_date) AS max_date,
+    formatReadableSize(sum(bytes_on_disk)) AS size,
+    sum(rows) AS rows
+FROM system.parts
+INNER JOIN
+(
+    SELECT
+        Tables.database AS database,
+        Tables.table AS table
+    FROM system.graphite_retentions
+    ARRAY JOIN Tables
+    GROUP BY
+        database,
+        table
+) USING (database, table)
+GROUP BY
+    database,
+    table,
+    active
+ORDER BY
+    database ASC,
+    table ASC,
+    active ASC
+```
+
+They will show general info about every GraphiteMergeTree table on the server.
 
 ## Run the graphite-ch-optimizer
 If you run the ClickHouse locally, you could just run `graphite-ch-optimizer -n --log-level debug` and see how many partitions on the instance are able to be merged automatically.
