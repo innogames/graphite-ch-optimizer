@@ -18,6 +18,7 @@ The next query is executed with some additional conditions as search for the par
 ```sql
 SELECT
     concat(p.database, '.', p.table) AS table,
+    p.partition_id AS partition_id,
     p.partition AS partition,
     max(g.age) AS age,
     countDistinct(p.name) AS parts,
