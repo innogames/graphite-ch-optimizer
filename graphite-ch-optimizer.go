@@ -278,6 +278,7 @@ func optimize() error {
 	// Getting connection pool and check it for work
 	cfg.ClickHouse.connect, _ = sql.Open("clickhouse", cfg.ClickHouse.ServerDsn)
 	connect := cfg.ClickHouse.connect
+	defer connect.Close()
 	err := connect.Ping()
 	if checkErr(err) != nil {
 		logrus.Fatalf("Ping ClickHouse server failed: %v", err)
