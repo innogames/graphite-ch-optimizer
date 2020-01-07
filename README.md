@@ -151,6 +151,7 @@ Possible command line arguments:
 Usage of graphite-ch-optimizer:
   -c, --config string                Filename of the custom config. CLI arguments override it
       --print-defaults               Print default config values and exit
+  -v, --version                      Print version and exit
       --optimize-interval duration   The active partitions won't be optimized more than once per this interval, seconds (default 72h0m0s)
   -s, --server-dsn string            DSN to connect to ClickHouse server (default "tcp://localhost:9000?&optimize_throw_if_noop=1&read_timeout=3600&debug=true")
   -n, --dry-run                      Will print how many partitions would be merged without actions
