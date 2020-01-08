@@ -1,0 +1,4 @@
+#!/bin/sh
+
+systemctl enable graphite-ch-optimizer.service
+systemctl start graphite-ch-optimizer.service

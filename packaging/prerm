@@ -1,0 +1,4 @@
+#!/bin/sh
+
+systemctl disable graphite-ch-optimizer.service
+systemctl stop graphite-ch-optimizer.service

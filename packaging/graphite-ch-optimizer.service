@@ -1,0 +1,12 @@
+[Unit]
+Description=Service to optimize stale GraphiteMergeTree tables
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/graphite-ch-optimizer
+Restart=on-failure
+User=nobody
+
+[Install]
+WantedBy=multi-user.target

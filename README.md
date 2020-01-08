@@ -2,6 +2,17 @@
 When you use [GraphiteMergeTree](https://clickhouse.yandex/docs/en/operations/table_engines/graphitemergetree) in ClickHouse DBMS, it applies retention policies from `system.graphite_retentions` configuration during merge processes. Unfortunately, ClickHouse doesn't launch merges for partitions a) without active inserts or b) with only one part in. It means, that it never will watch for the actual retention scheme applied to partitions.  
 This software looking for tables with GraphiteMergeTree engine and evaluate if some of partitions should be optimized. It could work both as one-shot script and background daemon.
 
+## Build
+To build a binary just run `make`.
+
+You should have make, golang and [fpm](https://github.com/jordansissel/fpm) installed to build packages. To build packages run one of the following:
+
+```
+make packages
+make deb
+make rpm
+```
+
 ## FAQ
 * The `go` version 1.13 or newer is required
 * Daemon mode is preferable over one-shot script for the normal work
