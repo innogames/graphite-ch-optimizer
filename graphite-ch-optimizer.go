@@ -20,6 +20,8 @@ import (
 	"github.com/spf13/viper"
 )
 
+var version = "development"
+
 // SelectUnmerged is the query to create the temporary table with
 // partitions and the retention age, which should be applied
 const SelectUnmerged = `
@@ -153,6 +155,7 @@ func processFlags() error {
 	pflag.CommandLine.SortFlags = false
 	customConfig := pflag.StringP("config", "c", "", "Filename of the custom config. CLI arguments override it")
 	pflag.Bool("print-defaults", false, "Print default config values and exit")
+	pflag.BoolP("version", "v", false, "Print version and exit")
 
 	// ClickHouse set
 	fc := pflag.NewFlagSet("clickhouse", 0)
@@ -172,6 +175,7 @@ func processFlags() error {
 	pflag.CommandLine.AddFlagSet(fd)
 	pflag.CommandLine.AddFlagSet(fl)
 
+	pflag.ErrHelp = fmt.Errorf("\nVersion: %s", version)
 	pflag.Parse()
 	// We must read config files before the setting of the config config to flags' values
 	err := readConfigFile(*customConfig)
@@ -230,6 +234,16 @@ func getConfig() Config {
 	err := processFlags()
 	if err != nil {
 		logrus.Fatalf("Failed to process flags: %v", err)
+	}
+
+	// Prints version and exit
+	printVersion, err := pflag.CommandLine.GetBool("version")
+	if err != nil {
+		logrus.Fatal("Can't get '--version' value")
+	}
+	if printVersion {
+		fmt.Println(version)
+		os.Exit(0)
 	}
 
 	// Prints default config and exits
