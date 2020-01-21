@@ -6,17 +6,26 @@ define DESC =
 'Service to optimize stale GraphiteMergeTree tables
  This software looking for tables with GraphiteMergeTree engine and evaluate if some of partitions should be optimized. It could work both as one-shot script and background daemon.'
 endef
+GO_FILES = $(shell find -name '*.go')
 PKG_FILES = build/$(NAME)_$(VERSION)_amd64.deb build/$(NAME)-$(VERSION)-1.x86_64.rpm
 
-.PHONY: clean all
+.PHONY: clean all version test
 
 all: build
+
+version:
+	@echo $(VERSION)
 
 clean:
 	rm -rf build
 	rm -rf $(NAME)
 
 rebuild: clean all
+
+test:
+	go vet $(GO_FILES)
+	go test $(GO_FILES)
+	go fmt $(GO_FILES)
 
 build: $(NAME)
 
