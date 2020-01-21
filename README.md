@@ -13,6 +13,10 @@ make deb
 make rpm
 ```
 
+## Docker
+To launch the container run the following command on the host with a running ClickHouse server:  
+`docker --net=host --rm innogames/graphite-ch-optimizer:latest`
+
 ## FAQ
 * The `go` version 1.13 or newer is required
 * Daemon mode is preferable over one-shot script for the normal work
