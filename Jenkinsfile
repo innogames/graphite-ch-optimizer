@@ -1,11 +1,23 @@
 #!/usr/bin/groovy
 library 'adminsLib@master'
+import groovy.json.JsonOutput
+
 properties([
     parameters([
         string(defaultValue: '', description: 'deb-drop repository, see https://github.com/innogames/deb-drop/', name: 'REPO_NAME', trim: false),
         booleanParam(defaultValue: false, description: 'Publish new packages and images or not. True for new releases, False by default.', name: 'PUBLISH'),
     ])
 ])
+
+def build_packages(docker_image) {
+    docker_image.inside("${jobCommon.dockerArgs()} -e GOPATH='${env.HOME}/go'") {
+        sh '''\
+            #!/bin/sh -ex
+            make packages
+            '''.stripIndent()
+    }
+}
+
 
 // Remove builds in presented status, default is ['ABORTED', 'NOT_BUILT']
 jobCommon.cleanNotFinishedBuilds()
@@ -36,33 +48,44 @@ ansiColor('xterm') {
                         "--target builder --cache-from=${env.DOCKER_IMAGE}:builder ."
                         )
             }
+            docker.withRegistry('', 'dockerIgSysadminsToken') {
+                img_builder.push()
+            }
             img_build = docker.build("${env.DOCKER_IMAGE}:build", '--target build .')
             img_build.inside("${jobCommon.dockerArgs()} -e GOPATH='${env.HOME}/go'") {
-                sh 'make test'
+                sh '''\
+                    #!/bin/sh -ex
+                    make test
+                    go get -u
+                    if ! git diff --exit-code; then
+                        echo The modules are changed, run 'go mod tidy' and commit changes
+                        exit 1
+                    fi
+                    '''
             }
         }
         stage('Building') {
         when(jobCommon.launchedByUser()) {
-            app_image = docker.build("${env.DOCKER_IMAGE}:latest")
-            img_build.inside("${jobCommon.dockerArgs()} -e GOPATH='${env.HOME}/go'") {
-                sh '''\
-                    #!/bin/sh -ex
-                    make packages
-                    '''.stripIndent()
-            }
-
-            if (env.PUBLISH) {
-                docker.withRegistry('', 'dockerIgSysadminsToken') {
-                    img_builder.push()
-                }
-            }
+            build_packages(img_build)
 
             if (env.REPO_NAME) {
-                deb_package = findFiles(glob: "*${env.NEW_VERSION}*deb")
+                deb_packages = findFiles(glob: "*${env.NEW_VERSION}*deb")
                 withCredentials([string(credentialsId: 'DEB_DROP_TOKEN', variable: 'DebDropToken')]) {
-                    jobCommon.uploadPackage  file: deb_package, repo: env.REPO_NAME, token: DebDropToken
+                    jobCommon.uploadPackage  file: deb_packages[0].path, repo: env.REPO_NAME, token: DebDropToken
                 }
             }
+
+        }
+        when(env.GIT_BRANCH_OR_TAG == 'tag' && !jobCommon.launchedByUser()) {
+            // TODO: implement github-api requests in library to publish new releases and assets
+            echo 'Assets publishing will be here eventually'
+            //build_packages(img_build)
+            //withCredentials([usernamePassword(
+            //    credentialsId: 'username/token',
+            //    usernameVariable: 'USERNAME',
+            //    passwordVariable: 'TOKEN'
+            //)]) {
+            //}
         }
         }
         cleanWs(notFailBuild: true)
