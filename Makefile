@@ -25,11 +25,10 @@ rebuild: clean all
 test:
 	go vet $(GO_FILES)
 	go test $(GO_FILES)
-	go fmt $(GO_FILES)
 
 build: $(NAME)
 
-$(NAME):
+$(NAME): $(NAME).go
 	go build -ldflags "-X 'main.version=$(VERSION)'" -o $@ .
 
 build/$(NAME): $(NAME).go

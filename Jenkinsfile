@@ -10,12 +10,11 @@ properties([
 ])
 
 def build_packages(docker_image) {
-    docker_image.inside("${jobCommon.dockerArgs()} -e GOPATH='${env.HOME}/go'") {
-        sh '''\
-            #!/bin/sh -ex
-            make packages
-            '''.stripIndent()
-    }
+    env.IMAGE = docker_image.imageName()
+    sh '''
+        #!/bin/bash
+        docker run --rm "${IMAGE}" | tar x --wildcards 'build/graphite-ch-optimizer?*'
+        '''
 }
 
 
@@ -42,26 +41,17 @@ ansiColor('xterm') {
                 docker.image("${env.DOCKER_IMAGE}:builder").pull()
             } catch (all) {
                 echo 'Unable to pull builder image, building from scratch'
-            } finally {
-                img_builder = docker.build(
-                        "${env.DOCKER_IMAGE}:builder",
-                        "--target builder --cache-from=${env.DOCKER_IMAGE}:builder ."
-                        )
             }
-            docker.withRegistry('', 'dockerIgSysadminsToken') {
-                img_builder.push()
-            }
+            img_builder = docker.build(
+                    "${env.DOCKER_IMAGE}:builder",
+                    "--target builder --cache-from=${env.DOCKER_IMAGE}:builder ."
+                    )
+            // Make test is the part of the build image
             img_build = docker.build("${env.DOCKER_IMAGE}:build", '--target build .')
-            img_build.inside("${jobCommon.dockerArgs()} -e GOPATH='${env.HOME}/go'") {
-                sh '''\
-                    #!/bin/sh -ex
-                    make test
-                    go get -u
-                    if ! git diff --exit-code; then
-                        echo The modules are changed, run 'go mod tidy' and commit changes
-                        exit 1
-                    fi
-                    '''
+            if (env.GIT_BRANCH == 'master') {
+                docker.withRegistry('', 'dockerIgSysadminsToken') {
+                    img_builder.push()
+                }
             }
         }
         stage('Building') {
