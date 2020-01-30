@@ -59,9 +59,11 @@ ansiColor('xterm') {
             build_packages(img_build)
 
             if (env.REPO_NAME) {
-                deb_packages = findFiles(glob: "*${env.NEW_VERSION}*deb")
+                deb_packages = findFiles(glob: "build/*${env.NEW_VERSION}*deb")
                 withCredentials([string(credentialsId: 'DEB_DROP_TOKEN', variable: 'DebDropToken')]) {
-                    jobCommon.uploadPackage  file: deb_packages[0].path, repo: env.REPO_NAME, token: DebDropToken
+                    deb_packages.each { pack->
+                        jobCommon.uploadPackage  file: pack.path, repo: env.REPO_NAME, token: DebDropToken
+                    }
                 }
             }
 
