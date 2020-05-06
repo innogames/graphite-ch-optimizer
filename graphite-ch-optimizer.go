@@ -23,10 +23,12 @@ import (
 var version = "development"
 
 // SelectUnmerged is the query to create the temporary table with
-// partitions and the retention age, which should be applied
+// partitions and the retention age, which should be applied.
+// Table name should be with backquotes to be able to OPTIMIZE `database`.`.inner.table`
+// for MaterializedView engines
 const SelectUnmerged = `
 SELECT
-	concat(p.database, '.', p.table) AS table,
+	concat(` + "'`', p.database, '`.`', p.table, '`'" + `) AS table,
 	p.partition_id AS partition_id,
 	p.partition AS partition_name,
 	max(g.age) AS age,
