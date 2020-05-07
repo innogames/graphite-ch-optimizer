@@ -10,7 +10,7 @@ GO_FILES = $(shell find -name '*.go')
 PKG_FILES = build/$(NAME)_$(VERSION)_amd64.deb build/$(NAME)-$(VERSION)-1.x86_64.rpm
 SUM_FILES = build/sha256sum build/md5sum
 
-.PHONY: clean all version test
+.PHONY: all clean docker test version
 
 all: build
 
@@ -28,6 +28,10 @@ test:
 	go test $(GO_FILES)
 
 build: $(NAME)
+
+docker:
+	docker build -t innogames/$(NAME):builder -f docker/builder/Dockerfile .
+	docker build -t innogames/$(NAME):latest -f docker/$(NAME)/Dockerfile .
 
 $(NAME): $(NAME).go
 	go build -ldflags "-X 'main.version=$(VERSION)'" -o $@ .

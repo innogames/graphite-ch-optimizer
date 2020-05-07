@@ -14,6 +14,10 @@ make rpm
 ```
 
 ## Docker
+
+To build docker image locally run:  
+`make docker`
+
 To launch the container run the following command on the host with a running ClickHouse server:  
 `docker run --net=host --rm innogames/graphite-ch-optimizer:latest`
 
