@@ -8,6 +8,7 @@ define DESC =
 endef
 GO_FILES = $(shell find -name '*.go')
 PKG_FILES = build/$(NAME)_$(VERSION)_amd64.deb build/$(NAME)-$(VERSION)-1.x86_64.rpm
+SUM_FILES = build/sha256sum build/md5sum
 
 .PHONY: clean all version test
 
@@ -37,7 +38,14 @@ build/$(NAME): $(NAME).go
 build/config.toml.example: build/$(NAME)
 	./build/$(NAME) --print-defaults > $@
 
-packages: $(PKG_FILES)
+packages: $(PKG_FILES) $(SUM_FILES)
+
+$(SUM_FILES): COMMAND = $(notdir $@)
+$(SUM_FILES): PKG_FILES_NAME = $(notdir $(PKG_FILES))
+.ONESHELL:
+$(SUM_FILES): $(PKG_FILES)
+	cd build
+	$(COMMAND) $(PKG_FILES_NAME) > $(COMMAND)
 
 .ONESHELL:
 build/pkg: build/$(NAME) build/config.toml.example
