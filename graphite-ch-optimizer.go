@@ -137,7 +137,7 @@ func init() {
 func setDefaultConfig() {
 	viper.SetDefault("clickhouse", map[string]interface{}{
 		// See ClickHouse documentation for further options
-		"server-dsn": "tcp://localhost:9000?&optimize_throw_if_noop=1&read_timeout=3600&debug=true",
+		"server-dsn": "tcp://localhost:9000?&optimize_throw_if_noop=1&receive_timeout=3600&debug=true",
 		// Ignore partitions which were merged less than 3 days before
 		"optimize-interval": time.Duration(72) * time.Hour,
 	})
