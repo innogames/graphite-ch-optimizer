@@ -8,8 +8,10 @@ define DESC =
 endef
 GO_FILES = $(shell find -name '*.go')
 PKG_FILES = build/$(NAME)_$(VERSION)_amd64.deb build/$(NAME)-$(VERSION)-1.x86_64.rpm
+SUM_FILES = build/sha256sum build/md5sum
 
-.PHONY: clean all version test
+
+.PHONY: all clean docker test version
 
 all: build
 
@@ -17,28 +19,51 @@ version:
 	@echo $(VERSION)
 
 clean:
+	rm -rf artifact
 	rm -rf build
 	rm -rf $(NAME)
 
 rebuild: clean all
 
+# Run tests
 test:
 	go vet $(GO_FILES)
 	go test $(GO_FILES)
 
-build: $(NAME)
+build: | $(NAME)
+	mkdir build
+
+docker:
+	docker build -t innogames/$(NAME):builder -f docker/builder/Dockerfile .
+	docker build -t innogames/$(NAME):latest -f docker/$(NAME)/Dockerfile .
 
 $(NAME): $(NAME).go
 	go build -ldflags "-X 'main.version=$(VERSION)'" -o $@ .
 
-build/$(NAME): $(NAME).go
-	GOOS=linux GOARCH=amd64 go build -ldflags "-X 'main.version=$(VERSION)'" -o $@ .
+#########################################################
+# Prepare artifact directory and set outputs for upload #
+#########################################################
+github_artifact: $(foreach art,$(PKG_FILES) $(SUM_FILES), artifact/$(notdir $(art)))
 
-build/config.toml.example: build/$(NAME)
-	./build/$(NAME) --print-defaults > $@
+artifact:
+	mkdir $@
 
-packages: $(PKG_FILES)
+# Link artifact to directory with setting step output to filename
+artifact/%: ART=$(notdir $@)
+artifact/%: TYPE=$(lastword $(subst ., ,$(ART)))
+artifact/%: build/% | artifact
+	cp -l $< $@
+	@echo '::set-output name=$(TYPE)::$(ART)'
 
+#######
+# END #
+#######
+
+#############
+# Packaging #
+#############
+
+# Prepare everything for packaging
 .ONESHELL:
 build/pkg: build/$(NAME) build/config.toml.example
 	cd build
@@ -46,6 +71,22 @@ build/pkg: build/$(NAME) build/config.toml.example
 	mkdir -p pkg/usr/bin
 	cp -l $(NAME) pkg/usr/bin/
 	cp -l config.toml.example pkg/etc/$(NAME)
+
+build/$(NAME): $(NAME).go
+	GOOS=linux GOARCH=amd64 go build -ldflags "-X 'main.version=$(VERSION)'" -o $@ .
+
+build/config.toml.example: build/$(NAME)
+	./build/$(NAME) --print-defaults > $@
+
+packages: $(PKG_FILES) $(SUM_FILES)
+
+# md5 and sha256 sum-files for packages
+$(SUM_FILES): COMMAND = $(notdir $@)
+$(SUM_FILES): PKG_FILES_NAME = $(notdir $(PKG_FILES))
+.ONESHELL:
+$(SUM_FILES): $(PKG_FILES)
+	cd build
+	$(COMMAND) $(PKG_FILES_NAME) > $(COMMAND)
 
 deb: $(word 1, $(PKG_FILES))
 
@@ -70,3 +111,7 @@ $(PKG_FILES): build/pkg
 		-p build \
 		build/pkg/=/ \
 		packaging/$(NAME).service=/lib/systemd/system/$(NAME).service
+
+#######
+# END #
+#######

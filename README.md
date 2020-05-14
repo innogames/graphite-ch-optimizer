@@ -14,6 +14,10 @@ make rpm
 ```
 
 ## Docker
+
+To build docker image locally run:  
+`make docker`
+
 To launch the container run the following command on the host with a running ClickHouse server:  
 `docker run --net=host --rm innogames/graphite-ch-optimizer:latest`
 
@@ -22,7 +26,7 @@ To launch the container run the following command on the host with a running Cli
 * Daemon mode is preferable over one-shot script for the normal work
 * It's safe to run it on the cluster hosts
 * You could either run it on the one of replicated host or just over the all hosts
-* If you have big partitions (month or something like this) and will get exceptions about timeout, then you need to adjust `read_timeout` parameter in DSN
+* If you have big partitions (month or something like this) and will get exceptions about timeout, then you need to adjust `receive_timeout` parameter in DSN
 * `optimize_throw_if_noop=1` is not mandatory, but good to have.
 * The next picture demonstrates the result of running the daemon for the first time on ~3 years old GraphiteMergeTree table:  
 <img src="./docs/result.jpg" alt="example"/>
@@ -148,7 +152,7 @@ Default config:
 ```toml
 [clickhouse]
   optimize-interval = "72h0m0s"
-  server-dsn = "tcp://localhost:9000?&optimize_throw_if_noop=1&read_timeout=3600&debug=true"
+  server-dsn = "tcp://localhost:9000?&optimize_throw_if_noop=1&receive_timeout=3600&debug=true"
 
 [daemon]
   dry-run = false
@@ -168,7 +172,7 @@ Usage of graphite-ch-optimizer:
       --print-defaults               Print default config values and exit
   -v, --version                      Print version and exit
       --optimize-interval duration   The active partitions won't be optimized more than once per this interval, seconds (default 72h0m0s)
-  -s, --server-dsn string            DSN to connect to ClickHouse server (default "tcp://localhost:9000?&optimize_throw_if_noop=1&read_timeout=3600&debug=true")
+  -s, --server-dsn string            DSN to connect to ClickHouse server (default "tcp://localhost:9000?&optimize_throw_if_noop=1&receive_timeout=3600&debug=true")
   -n, --dry-run                      Will print how many partitions would be merged without actions
       --loop-interval duration       Daemon will check if there partitions to merge once per this interval, seconds (default 1h0m0s)
       --one-shot                     Program will make only one optimization instead of working in the loop (true if dry-run)
