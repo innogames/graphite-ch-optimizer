@@ -82,8 +82,8 @@ type clickHouse struct {
 }
 
 type daemon struct {
-	OneShot      bool          `mapstructure:"one-shot" toml:"one-shot"`
 	LoopInterval time.Duration `mapstructure:"loop-interval" toml:"loop-interval"`
+	OneShot      bool          `mapstructure:"one-shot" toml:"one-shot"`
 	DryRun       bool          `mapstructure:"dry-run" toml:"dry-run"`
 }
 
