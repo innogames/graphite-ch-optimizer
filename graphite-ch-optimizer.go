@@ -362,6 +362,7 @@ func optimize() error {
 	logrus.Infof("Merges will be applied: %d", len(merges))
 
 	for _, m := range merges {
+		m := m
 		err = applyMerge(&m)
 		if checkErr(err) != nil {
 			return err
