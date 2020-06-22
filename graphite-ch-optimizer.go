@@ -379,36 +379,35 @@ func applyMerge(m *merge) error {
 			m.partitionID,
 		),
 	)
-	if err != nil {
-		var chExc *clickhouse.Exception
-		if errors.As(err, &chExc) {
-			if chExc.Code == 388 && strings.Contains(chExc.Message, "has already been assigned a merge into") {
-				logrus.WithFields(logrus.Fields{
-					"table":          m.table,
-					"partition_name": m.partitionName,
-				}).Info("The partition is already merging:")
-				return nil
-			}
-		}
-		return fmt.Errorf("Fail to merge partition %v: %w", m.partitionName, checkErr(err))
+	if err == nil {
+		return nil
 	}
-	return nil
+
+	var chExc *clickhouse.Exception
+	if errors.As(err, &chExc) && chExc.Code == 388 && strings.Contains(chExc.Message, "has already been assigned a merge into") {
+		logrus.WithFields(logrus.Fields{
+			"table":          m.table,
+			"partition_name": m.partitionName,
+		}).Info("The partition is already merging:")
+		return nil
+	}
+	return fmt.Errorf("Fail to merge partition %v: %w", m.partitionName, checkErr(err))
 }
 
 func checkErr(err error) error {
 	var chExc *clickhouse.Exception
 	if err == nil {
+		return nil
+	}
+	if !errors.As(err, &chExc) {
+		logrus.Errorf("Fail: %v", err)
 		return err
 	}
-	if errors.As(err, &chExc) {
-		logrus.Errorf(
-			"[%d] %s \n%s\n",
-			chExc.Code,
-			chExc.Message,
-			chExc.StackTrace,
-		)
-	} else {
-		logrus.Errorf("Fail: %v", err)
-	}
+	logrus.Errorf(
+		"[%d] %s \n%s\n",
+		chExc.Code,
+		chExc.Message,
+		chExc.StackTrace,
+	)
 	return err
 }
