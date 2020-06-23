@@ -82,8 +82,8 @@ type clickHouse struct {
 }
 
 type daemon struct {
-	OneShot      bool          `mapstructure:"one-shot" toml:"one-shot"`
 	LoopInterval time.Duration `mapstructure:"loop-interval" toml:"loop-interval"`
+	OneShot      bool          `mapstructure:"one-shot" toml:"one-shot"`
 	DryRun       bool          `mapstructure:"dry-run" toml:"dry-run"`
 }
 
@@ -119,17 +119,20 @@ func init() {
 	default:
 		output, err = os.OpenFile(cfg.Logging.Output, os.O_WRONLY|os.O_APPEND, 0644)
 		if err != nil {
-			logrus.Fatalf("Unable to open file %s for writing: %s", cfg.Logging.Output, err)
+			logrus.Fatalf("Unable to open file %s for writing: %v", cfg.Logging.Output, err)
 		}
 	}
 	logrus.SetOutput(output)
 	level, err := logrus.ParseLevel(cfg.Logging.Level)
 	if err != nil {
-		logrus.Fatal(fmt.Sprintf("Fail to parse log level: %v", err))
+		logrus.Fatalf("Fail to parse log level: %v", err)
 	}
 	logrus.SetLevel(level)
 
-	configString, _ := toml.Marshal(cfg)
+	configString, err := toml.Marshal(cfg)
+	if err != nil {
+		logrus.Fatalf("Failed to marshal TOML config: %v", err)
+	}
 	logrus.Tracef("The config is:\n%v", string(configString))
 }
 
@@ -187,13 +190,19 @@ func processFlags() error {
 
 	// Parse flag groups into viper config
 	fc.VisitAll(func(f *pflag.Flag) {
-		viper.BindPFlag("clickhouse."+f.Name, f)
+		if err := viper.BindPFlag("clickhouse."+f.Name, f); err != nil {
+			logrus.Fatalf("Failed to bind key clickhouse.%s: %v", f.Name, err)
+		}
 	})
 	fd.VisitAll(func(f *pflag.Flag) {
-		viper.BindPFlag("daemon."+f.Name, f)
+		if err := viper.BindPFlag("daemon."+f.Name, f); err != nil {
+			logrus.Fatalf("Failed to bind key daemon.%s: %v", f.Name, err)
+		}
 	})
 	fl.VisitAll(func(f *pflag.Flag) {
-		viper.BindPFlag("logging."+f.Name, f)
+		if err := viper.BindPFlag("logging."+f.Name, f); err != nil {
+			logrus.Fatalf("Failed to bind key logging.%s: %v", f.Name, err)
+		}
 	})
 
 	// If it's dry run, then it should be done only once
@@ -263,13 +272,18 @@ func getConfig() Config {
 	}
 
 	c := Config{}
-	viper.Unmarshal(&c)
+	if err := viper.Unmarshal(&c); err != nil {
+		logrus.Fatalf("Failed to unmarshal config: %v", err)
+	}
 	return c
 }
 
 func main() {
 	if cfg.Daemon.OneShot {
-		optimize()
+		err := optimize()
+		if err != nil {
+			logrus.Fatalf("Optimization failed: %s", err)
+		}
 		os.Exit(0)
 	}
 
@@ -292,10 +306,13 @@ func main() {
 
 func optimize() error {
 	// Getting connection pool and check it for work
-	cfg.ClickHouse.connect, _ = sql.Open("clickhouse", cfg.ClickHouse.ServerDsn)
-	connect := cfg.ClickHouse.connect
+	connect, err := sql.Open("clickhouse", cfg.ClickHouse.ServerDsn)
+	if err != nil {
+		logrus.Fatalf("Failed to open connection to %s: %v ClickHouse", cfg.ClickHouse.ServerDsn, err)
+	}
+	cfg.ClickHouse.connect = connect
 	defer connect.Close()
-	err := connect.Ping()
+	err = connect.Ping()
 	if checkErr(err) != nil {
 		logrus.Fatalf("Ping ClickHouse server failed: %v", err)
 	}
@@ -345,6 +362,7 @@ func optimize() error {
 	logrus.Infof("Merges will be applied: %d", len(merges))
 
 	for _, m := range merges {
+		m := m
 		err = applyMerge(&m)
 		if checkErr(err) != nil {
 			return err
@@ -362,36 +380,35 @@ func applyMerge(m *merge) error {
 			m.partitionID,
 		),
 	)
-	if err != nil {
-		var chExc *clickhouse.Exception
-		if errors.As(err, &chExc) {
-			if chExc.Code == 388 && strings.Contains(chExc.Message, "has already been assigned a merge into") {
-				logrus.WithFields(logrus.Fields{
-					"table":          m.table,
-					"partition_name": m.partitionName,
-				}).Info("The partition is already merging:")
-				return nil
-			}
-		}
-		return fmt.Errorf("Fail to merge partition %v: %w", m.partitionName, checkErr(err))
+	if err == nil {
+		return nil
 	}
-	return nil
+
+	var chExc *clickhouse.Exception
+	if errors.As(err, &chExc) && chExc.Code == 388 && strings.Contains(chExc.Message, "has already been assigned a merge into") {
+		logrus.WithFields(logrus.Fields{
+			"table":          m.table,
+			"partition_name": m.partitionName,
+		}).Info("The partition is already merging:")
+		return nil
+	}
+	return fmt.Errorf("Fail to merge partition %v: %w", m.partitionName, checkErr(err))
 }
 
 func checkErr(err error) error {
 	var chExc *clickhouse.Exception
 	if err == nil {
+		return nil
+	}
+	if !errors.As(err, &chExc) {
+		logrus.Errorf("Fail: %v", err)
 		return err
 	}
-	if errors.As(err, &chExc) {
-		logrus.Errorf(
-			"[%d] %s \n%s\n",
-			chExc.Code,
-			chExc.Message,
-			chExc.StackTrace,
-		)
-	} else {
-		logrus.Errorf("Fail: %v", err)
-	}
+	logrus.Errorf(
+		"[%d] %s \n%s\n",
+		chExc.Code,
+		chExc.Message,
+		chExc.StackTrace,
+	)
 	return err
 }
