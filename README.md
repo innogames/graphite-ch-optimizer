@@ -13,6 +13,13 @@ make deb
 make rpm
 ```
 
+### Publish new version
+
+After checks are green for the latest commit in master, create a tag with format `v1.2.3` with 1 as major, 2 as minor and 3 as patch version.  
+The workflow will build packages and upload them as release's assets.
+
+In the same time, the Docker Hub will build the images for the latest and `1.2.3` tags.
+
 ## Docker
 
 To build docker image locally run:  
