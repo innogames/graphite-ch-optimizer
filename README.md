@@ -84,7 +84,7 @@ SELECT
     max(max_date) AS max_date,
     formatReadableSize(sum(bytes_on_disk)) AS size,
     sum(rows) AS rows
-FROM system.parts
+FROM system.parts AS p
 INNER JOIN
 (
     SELECT
@@ -95,7 +95,7 @@ INNER JOIN
     GROUP BY
         database,
         table
-) USING (database, table)
+) AS g USING (database, table)
 GROUP BY
     database,
     table,
@@ -120,7 +120,7 @@ SELECT
     max(max_date) AS max_date,
     formatReadableSize(sum(bytes_on_disk)) AS size,
     sum(rows) AS rows
-FROM system.parts
+FROM system.parts AS p
 INNER JOIN
 (
     SELECT
@@ -131,7 +131,7 @@ INNER JOIN
     GROUP BY
         database,
         table
-) USING (database, table)
+) AS g USING (database, table)
 GROUP BY
     database,
     table,
