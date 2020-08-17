@@ -178,10 +178,10 @@ Usage of graphite-ch-optimizer:
   -c, --config string                Filename of the custom config. CLI arguments override it
       --print-defaults               Print default config values and exit
   -v, --version                      Print version and exit
-      --optimize-interval duration   The active partitions won't be optimized more than once per this interval, seconds (default 72h0m0s)
+      --optimize-interval duration   The partition will be merged after having no writes for more than the given duration (default 72h0m0s)
   -s, --server-dsn string            DSN to connect to ClickHouse server (default "tcp://localhost:9000?&optimize_throw_if_noop=1&receive_timeout=3600&debug=true")
   -n, --dry-run                      Will print how many partitions would be merged without actions
-      --loop-interval duration       Daemon will check if there partitions to merge once per this interval, seconds (default 1h0m0s)
+      --loop-interval duration       Daemon will check if there partitions to merge once per this interval (default 1h0m0s)
       --one-shot                     Program will make only one optimization instead of working in the loop (true if dry-run)
       --log-level string             Valid options are: panic, fatal, error, warn, warning, info, debug, trace
       --output string                The logs file. '-' is accepted as STDOUT (default "-")

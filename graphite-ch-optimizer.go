@@ -164,11 +164,11 @@ func processFlags() error {
 	// ClickHouse set
 	fc := pflag.NewFlagSet("clickhouse", 0)
 	fc.StringP("server-dsn", "s", viper.GetString("clickhouse.server-dsn"), "DSN to connect to ClickHouse server")
-	fc.Duration("optimize-interval", viper.GetDuration("clickhouse.optimize-interval"), "The active partitions won't be optimized more than once per this interval, seconds")
+	fc.Duration("optimize-interval", viper.GetDuration("clickhouse.optimize-interval"), "The partition will be merged after having no writes for more than the given duration")
 	// Daemon set
 	fd := pflag.NewFlagSet("daemon", 0)
 	fd.Bool("one-shot", viper.GetBool("daemon.one-shot"), "Program will make only one optimization instead of working in the loop (true if dry-run)")
-	fd.Duration("loop-interval", viper.GetDuration("daemon.loop-interval"), "Daemon will check if there partitions to merge once per this interval, seconds")
+	fd.Duration("loop-interval", viper.GetDuration("daemon.loop-interval"), "Daemon will check if there partitions to merge once per this interval")
 	fd.BoolP("dry-run", "n", viper.GetBool("daemon.dry-run"), "Will print how many partitions would be merged without actions")
 	// Logging set
 	fl := pflag.NewFlagSet("logging", 0)
