@@ -13,6 +13,13 @@ make deb
 make rpm
 ```
 
+### Publish new version
+
+After checks are green for the latest commit in master, create a tag with format `v1.2.3` with 1 as major, 2 as minor and 3 as patch version.  
+The workflow will build packages and upload them as release's assets.
+
+In the same time, the Docker Hub will build the images for the latest and `1.2.3` tags.
+
 ## Docker
 
 To build docker image locally run:  
@@ -84,7 +91,7 @@ SELECT
     max(max_date) AS max_date,
     formatReadableSize(sum(bytes_on_disk)) AS size,
     sum(rows) AS rows
-FROM system.parts
+FROM system.parts AS p
 INNER JOIN
 (
     SELECT
@@ -95,7 +102,7 @@ INNER JOIN
     GROUP BY
         database,
         table
-) USING (database, table)
+) AS g USING (database, table)
 GROUP BY
     database,
     table,
@@ -120,7 +127,7 @@ SELECT
     max(max_date) AS max_date,
     formatReadableSize(sum(bytes_on_disk)) AS size,
     sum(rows) AS rows
-FROM system.parts
+FROM system.parts AS p
 INNER JOIN
 (
     SELECT
@@ -131,7 +138,7 @@ INNER JOIN
     GROUP BY
         database,
         table
-) USING (database, table)
+) AS g USING (database, table)
 GROUP BY
     database,
     table,
@@ -171,10 +178,10 @@ Usage of graphite-ch-optimizer:
   -c, --config string                Filename of the custom config. CLI arguments override it
       --print-defaults               Print default config values and exit
   -v, --version                      Print version and exit
-      --optimize-interval duration   The active partitions won't be optimized more than once per this interval, seconds (default 72h0m0s)
+      --optimize-interval duration   The partition will be merged after having no writes for more than the given duration (default 72h0m0s)
   -s, --server-dsn string            DSN to connect to ClickHouse server (default "tcp://localhost:9000?&optimize_throw_if_noop=1&receive_timeout=3600&debug=true")
   -n, --dry-run                      Will print how many partitions would be merged without actions
-      --loop-interval duration       Daemon will check if there partitions to merge once per this interval, seconds (default 1h0m0s)
+      --loop-interval duration       Daemon will check if there partitions to merge once per this interval (default 1h0m0s)
       --one-shot                     Program will make only one optimization instead of working in the loop (true if dry-run)
       --log-level string             Valid options are: panic, fatal, error, warn, warning, info, debug, trace
       --output string                The logs file. '-' is accepted as STDOUT (default "-")
