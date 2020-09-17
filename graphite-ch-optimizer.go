@@ -157,7 +157,8 @@ func setDefaultConfig() {
 func processFlags() error {
 	// Parse command line arguments in differend flag groups
 	pflag.CommandLine.SortFlags = false
-	customConfig := pflag.StringP("config", "c", "", "Filename of the custom config. CLI arguments override it")
+	defaultConfig := "/etc/" + filepath.Base(os.Args[0]) + "/config.toml"
+	customConfig := pflag.StringP("config", "c", defaultConfig, "Filename of the custom config. CLI arguments override it")
 	pflag.Bool("print-defaults", false, "Print default config values and exit")
 	pflag.BoolP("version", "v", false, "Print version and exit")
 
@@ -215,10 +216,11 @@ func processFlags() error {
 // readConfigFile set file as the config name if it's not empty and reads the config from Viper.configPaths
 func readConfigFile(file string) error {
 	var cfgNotFound viper.ConfigFileNotFoundError
+	var perr *os.PathError
 	viper.SetConfigFile(file)
 	err := viper.ReadInConfig()
 	if err != nil {
-		if errors.As(err, &cfgNotFound) {
+		if errors.As(err, &cfgNotFound) || errors.As(err, &perr) {
 			logrus.Debug("No config files were found, use defaults and flags")
 			return nil
 		}
