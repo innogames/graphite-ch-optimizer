@@ -116,12 +116,13 @@ func init() {
 	case "-":
 		output = os.Stdout
 	default:
-		output, err = os.OpenFile(cfg.Logging.Output, os.O_WRONLY|os.O_APPEND, 0644)
+		output, err = os.OpenFile(cfg.Logging.Output, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
 		if err != nil {
 			logrus.Fatalf("Unable to open file %s for writing: %v", cfg.Logging.Output, err)
 		}
 	}
 	logrus.SetOutput(output)
+	clickhouse.SetLogOutput(output)
 	level, err := logrus.ParseLevel(cfg.Logging.Level)
 	if err != nil {
 		logrus.Fatalf("Fail to parse log level: %v", err)
