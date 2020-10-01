@@ -68,7 +68,8 @@ INNER JOIN
 WHERE p.active AND ((toDateTime(p.max_date + 1) + g.age) < now())
 GROUP BY
     table,
-    partition
+    partition,
+    partition_id
 HAVING (modified_at < rollup_time) OR (parts > 1)
 ORDER BY
     table ASC,
@@ -175,7 +176,7 @@ Possible command line arguments:
 
 ```
 Usage of graphite-ch-optimizer:
-  -c, --config string                Filename of the custom config. CLI arguments override it
+  -c, --config string                Filename of the custom config. CLI arguments override it (default "/etc/graphite-ch-optimizer/config.toml")
       --print-defaults               Print default config values and exit
   -v, --version                      Print version and exit
       --optimize-interval duration   The partition will be merged after having no writes for more than the given duration (default 72h0m0s)
@@ -185,4 +186,6 @@ Usage of graphite-ch-optimizer:
       --one-shot                     Program will make only one optimization instead of working in the loop (true if dry-run)
       --log-level string             Valid options are: panic, fatal, error, warn, warning, info, debug, trace
       --output string                The logs file. '-' is accepted as STDOUT (default "-")
+
+Version: version-string
 ```
