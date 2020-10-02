@@ -116,12 +116,13 @@ func init() {
 	case "-":
 		output = os.Stdout
 	default:
-		output, err = os.OpenFile(cfg.Logging.Output, os.O_WRONLY|os.O_APPEND, 0644)
+		output, err = os.OpenFile(cfg.Logging.Output, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
 		if err != nil {
 			logrus.Fatalf("Unable to open file %s for writing: %v", cfg.Logging.Output, err)
 		}
 	}
 	logrus.SetOutput(output)
+	clickhouse.SetLogOutput(output)
 	level, err := logrus.ParseLevel(cfg.Logging.Level)
 	if err != nil {
 		logrus.Fatalf("Fail to parse log level: %v", err)
@@ -157,7 +158,8 @@ func setDefaultConfig() {
 func processFlags() error {
 	// Parse command line arguments in differend flag groups
 	pflag.CommandLine.SortFlags = false
-	customConfig := pflag.StringP("config", "c", "", "Filename of the custom config. CLI arguments override it")
+	defaultConfig := "/etc/" + filepath.Base(os.Args[0]) + "/config.toml"
+	customConfig := pflag.StringP("config", "c", defaultConfig, "Filename of the custom config. CLI arguments override it")
 	pflag.Bool("print-defaults", false, "Print default config values and exit")
 	pflag.BoolP("version", "v", false, "Print version and exit")
 
@@ -215,10 +217,11 @@ func processFlags() error {
 // readConfigFile set file as the config name if it's not empty and reads the config from Viper.configPaths
 func readConfigFile(file string) error {
 	var cfgNotFound viper.ConfigFileNotFoundError
+	var perr *os.PathError
 	viper.SetConfigFile(file)
 	err := viper.ReadInConfig()
 	if err != nil {
-		if errors.As(err, &cfgNotFound) {
+		if errors.As(err, &cfgNotFound) || errors.As(err, &perr) {
 			logrus.Debug("No config files were found, use defaults and flags")
 			return nil
 		}
