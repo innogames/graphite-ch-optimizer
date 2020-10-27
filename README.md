@@ -33,7 +33,9 @@ To launch the container run the following command on the host with a running Cli
 * Daemon mode is preferable over one-shot script for the normal work
 * It's safe to run it on the cluster hosts
 * You could either run it on the one of replicated host or just over the all hosts
-* If you have big partitions (month or something like this) and will get exceptions about timeout, then you need to adjust `receive_timeout` parameter in DSN
+* There are two different parameters in DSN, that should be adjusted together to fix timeouts for big partitions (month or something like this) optimizing:
+  * `read_timeout` - `clickhouse-go` parameter. Controls the timeout between the `graphite-ch-optimizer` and ClickHouse server.
+  * `receive_timeout` - ClickHouse parameter, used when the OPTIMIZE query is applied in the cluster. See [comment](https://github.com/ClickHouse/ClickHouse/issues/4831#issuecomment-708721042) in the issue.
 * `optimize_throw_if_noop=1` is not mandatory, but good to have.
 * The next picture demonstrates the result of running the daemon for the first time on ~3 years old GraphiteMergeTree table:  
 <img src="./docs/result.jpg" alt="example"/>
@@ -160,7 +162,7 @@ Default config:
 ```toml
 [clickhouse]
   optimize-interval = "72h0m0s"
-  server-dsn = "tcp://localhost:9000?&optimize_throw_if_noop=1&receive_timeout=3600&debug=true"
+  server-dsn = "tcp://localhost:9000?&optimize_throw_if_noop=1&receive_timeout=3600&debug=true&read_timeout=3600"
 
 [daemon]
   dry-run = false
@@ -180,7 +182,7 @@ Usage of graphite-ch-optimizer:
       --print-defaults               Print default config values and exit
   -v, --version                      Print version and exit
       --optimize-interval duration   The partition will be merged after having no writes for more than the given duration (default 72h0m0s)
-  -s, --server-dsn string            DSN to connect to ClickHouse server (default "tcp://localhost:9000?&optimize_throw_if_noop=1&receive_timeout=3600&debug=true")
+  -s, --server-dsn string            DSN to connect to ClickHouse server (default "tcp://localhost:9000?&optimize_throw_if_noop=1&receive_timeout=3600&debug=true&read_timeout=3600")
   -n, --dry-run                      Will print how many partitions would be merged without actions
       --loop-interval duration       Daemon will check if there partitions to merge once per this interval (default 1h0m0s)
       --one-shot                     Program will make only one optimization instead of working in the loop (true if dry-run)
