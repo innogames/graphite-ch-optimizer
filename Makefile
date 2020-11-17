@@ -9,7 +9,11 @@ endef
 GO_FILES = $(shell find -name '*.go')
 PKG_FILES = build/$(NAME)_$(VERSION)_amd64.deb build/$(NAME)-$(VERSION)-1.x86_64.rpm
 SUM_FILES = build/sha256sum build/md5sum
+MODULE = github.com/innogames/$(NAME)
 
+GO ?= go
+export GOFLAGS +=  -mod=vendor
+export GO111MODULE := on
 
 .PHONY: all clean docker test version
 
@@ -27,8 +31,8 @@ rebuild: clean all
 
 # Run tests
 test:
-	go vet $(GO_FILES)
-	go test $(GO_FILES)
+	$(GO) vet $(MODULE)
+	$(GO) test $(MODULE)
 
 build: | $(NAME)
 	mkdir build
@@ -38,7 +42,7 @@ docker:
 	docker build -t innogames/$(NAME):latest -f docker/$(NAME)/Dockerfile .
 
 $(NAME): $(NAME).go
-	go build -ldflags "-X 'main.version=$(VERSION)'" -o $@ .
+	$(GO) build -ldflags "-X 'main.version=$(VERSION)'" -o $@ .
 
 #########################################################
 # Prepare artifact directory and set outputs for upload #
@@ -73,7 +77,7 @@ build/pkg: build/$(NAME) build/config.toml.example
 	cp -l config.toml.example pkg/etc/$(NAME)
 
 build/$(NAME): $(NAME).go
-	GOOS=linux GOARCH=amd64 go build -ldflags "-X 'main.version=$(VERSION)'" -o $@ .
+	GOOS=linux GOARCH=amd64 $(GO) build -ldflags "-X 'main.version=$(VERSION)'" -o $@ .
 
 build/config.toml.example: build/$(NAME)
 	./build/$(NAME) --print-defaults > $@
