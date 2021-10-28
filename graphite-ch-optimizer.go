@@ -139,7 +139,9 @@ func init() {
 // setDefaultConfig sets default config parameters
 func setDefaultConfig() {
 	viper.SetDefault("clickhouse", map[string]interface{}{
-		// See ClickHouse documentation for further options
+		// See ClickHouse documentation for further options.
+		// As well, take a look into README.md to see the difference between different timeout arguments,
+		// and why both of them are necessary.
 		"server-dsn": "tcp://localhost:9000?&optimize_throw_if_noop=1&receive_timeout=3600&debug=true&read_timeout=3600",
 		// Ignore partitions which were merged less than 3 days before
 		"optimize-interval": time.Duration(72) * time.Hour,
