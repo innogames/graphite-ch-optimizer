@@ -1,6 +1,7 @@
 [Unit]
 Description=Service to optimize stale GraphiteMergeTree tables
-After=network.target
+After=network.target clickhouse-server.service
+Wants=clickhouse-server.service
 
 [Service]
 Type=simple
